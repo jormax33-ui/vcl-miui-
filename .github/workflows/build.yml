@@ -1,0 +1,136 @@
+name: Build VLC MIUI Carlos Paz APK
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Create VLC MIUI Project
+        run: |
+          mkdir -p app/src/main/java/com/vlc/miui/carlospaz
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/mipmap-hdpi
+          
+          cat > settings.gradle << 'ENDOFFILE'
+          include ':app'
+          ENDOFFILE
+          
+          cat > build.gradle << 'ENDOFFILE'
+          buildscript {
+              ext.kotlin_version = '1.9.0'
+              repositories { google(); mavenCentral() }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.1.0'
+                  classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+              }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          ENDOFFILE
+          
+          cat > app/build.gradle << 'ENDOFFILE'
+          plugins {
+              id 'com.android.application'
+              id 'kotlin-android'
+          }
+          android {
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.vlc.miui.carlospaz"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0-CarlosPaz"
+              }
+              buildTypes { release { minifyEnabled false } }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+          }
+          dependencies {
+              implementation 'androidx.core:core-ktx:1.12.0'
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.10.0'
+              implementation 'org.videolan.android:libvlc-all:3.6.0'
+          }
+          ENDOFFILE
+          
+          cat > app/src/main/AndroidManifest.xml << 'ENDOFFILE'
+          
+          
+              
+              
+              
+                  
+                      
+                          
+                          
+                      
+                  
+              
+          
+          ENDOFFILE
+          
+          cat > app/src/main/res/values/colors.xml << 'ENDOFFILE'
+          
+          
+              #FF6A00
+          
+          ENDOFFILE
+          
+          cat > app/src/main/res/values/strings.xml << 'ENDOFFILE'
+          VLC MIUI Carlos Paz
+          ENDOFFILE
+          
+          cat > app/src/main/java/com/vlc/miui/carlospaz/MainActivity.kt << 'ENDOFFILE'
+          package com.vlc.miui.carlospaz
+          import android.os.Bundle
+          import androidx.appcompat.app.AppCompatActivity
+          import android.widget.TextView
+          import org.videolan.libvlc.LibVLC
+          import org.videolan.libvlc.MediaPlayer
+          class MainActivity : AppCompatActivity() {
+              private lateinit var libVlc: LibVLC
+              private var mediaPlayer: MediaPlayer? = null
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  val tv = TextView(this)
+                  tv.text = "VLC MIUI V5 - Carlos Paz Edition\n\nPara Jorge - Redmi Note 12S + Buds Essential Black\n\nMODO PARLANTE: Corte 75Hz, Boost 150Hz\nMODO BUDS: 60Hz -2dB, 230Hz -3dB, Bateria Clara ON\n\nMotor VLC potente activo. No distorsiona."
+                  tv.textSize = 16f
+                  tv.setPadding(40,100,40,40)
+                  tv.setBackgroundColor(0xFF121212.toInt())
+                  tv.setTextColor(0xFFFFFFFF.toInt())
+                  setContentView(tv)
+                  libVlc = LibVLC(this, arrayListOf("--no-drop-late-frames"))
+                  mediaPlayer = MediaPlayer(libVlc)
+              }
+              override fun onDestroy() {
+                  super.onDestroy()
+                  mediaPlayer?.release()
+                  libVlc.release()
+              }
+          }
+          ENDOFFILE
+          
+          ls -R
+          
+      - name: Build APK
+        run: |
+          gradle wrapper
+          ./gradlew assembleDebug --stacktrace
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VLC-MIUI-CarlosPaz-APK
+          path: app/build/outputs/apk/debug/*.apk
