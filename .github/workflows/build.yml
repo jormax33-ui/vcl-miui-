@@ -1,31 +1,35 @@
 name: Build VLC MIUI Carlos Paz APK
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        
-      - name: Create VLC MIUI Project
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create project files
         run: |
+          rm -rf app build.gradle settings.gradle gradlew
           mkdir -p app/src/main/java/com/vlc/miui/carlospaz
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/mipmap-hdpi
           
-          cat > settings.gradle << 'ENDOFFILE'
-          include ':app'
-          ENDOFFILE
+          echo "include ':app'" > settings.gradle
           
-          cat > build.gradle << 'ENDOFFILE'
+          cat > build.gradle << 'EOF'
           buildscript {
               ext.kotlin_version = '1.9.0'
               repositories { google(); mavenCentral() }
@@ -35,9 +39,9 @@ jobs:
               }
           }
           allprojects { repositories { google(); mavenCentral() } }
-          ENDOFFILE
+          EOF
           
-          cat > app/build.gradle << 'ENDOFFILE'
+          cat > app/build.gradle << 'EOF'
           plugins {
               id 'com.android.application'
               id 'kotlin-android'
@@ -52,10 +56,6 @@ jobs:
                   versionName "1.0-CarlosPaz"
               }
               buildTypes { release { minifyEnabled false } }
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
           }
           dependencies {
               implementation 'androidx.core:core-ktx:1.12.0'
@@ -63,9 +63,9 @@ jobs:
               implementation 'com.google.android.material:material:1.10.0'
               implementation 'org.videolan.android:libvlc-all:3.6.0'
           }
-          ENDOFFILE
+          EOF
           
-          cat > app/src/main/AndroidManifest.xml << 'ENDOFFILE'
+          cat > app/src/main/AndroidManifest.xml << 'EOF'
           
           
               
@@ -79,20 +79,12 @@ jobs:
                   
               
           
-          ENDOFFILE
+          EOF
           
-          cat > app/src/main/res/values/colors.xml << 'ENDOFFILE'
+          echo '#FF6A00' > app/src/main/res/values/colors.xml
+          echo 'VLC MIUI Carlos Paz' > app/src/main/res/values/strings.xml
           
-          
-              #FF6A00
-          
-          ENDOFFILE
-          
-          cat > app/src/main/res/values/strings.xml << 'ENDOFFILE'
-          VLC MIUI Carlos Paz
-          ENDOFFILE
-          
-          cat > app/src/main/java/com/vlc/miui/carlospaz/MainActivity.kt << 'ENDOFFILE'
+          cat > app/src/main/java/com/vlc/miui/carlospaz/MainActivity.kt << 'EOF'
           package com.vlc.miui.carlospaz
           import android.os.Bundle
           import androidx.appcompat.app.AppCompatActivity
@@ -105,7 +97,7 @@ jobs:
               override fun onCreate(savedInstanceState: Bundle?) {
                   super.onCreate(savedInstanceState)
                   val tv = TextView(this)
-                  tv.text = "VLC MIUI V5 - Carlos Paz Edition\n\nPara Jorge - Redmi Note 12S + Buds Essential Black\n\nMODO PARLANTE: Corte 75Hz, Boost 150Hz\nMODO BUDS: 60Hz -2dB, 230Hz -3dB, Bateria Clara ON\n\nMotor VLC potente activo. No distorsiona."
+                  tv.text = "VLC MIUI V5 - Carlos Paz Edition\n\nPara Jorge - Redmi Note 12S + Buds Essential Black\n\nMODO PARLANTE: Corte 75Hz, Boost 150Hz para bateria sin distorsion\nMODO BUDS: 60Hz -2dB, 230Hz -3dB, Bateria Clara ON\n\nMotor VLC potente activo."
                   tv.textSize = 16f
                   tv.setPadding(40,100,40,40)
                   tv.setBackgroundColor(0xFF121212.toInt())
@@ -114,21 +106,13 @@ jobs:
                   libVlc = LibVLC(this, arrayListOf("--no-drop-late-frames"))
                   mediaPlayer = MediaPlayer(libVlc)
               }
-              override fun onDestroy() {
-                  super.onDestroy()
-                  mediaPlayer?.release()
-                  libVlc.release()
-              }
+              override fun onDestroy() { super.onDestroy(); mediaPlayer?.release(); libVlc.release() }
           }
-          ENDOFFILE
-          
-          ls -R
-          
+          EOF
+
       - name: Build APK
-        run: |
-          gradle wrapper
-          ./gradlew assembleDebug --stacktrace
-          
+        run: gradle assembleDebug --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
